@@ -35,13 +35,17 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+#define VREF_CALIB_VALUE (0x1FFF75AA)
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+
  ADC_HandleTypeDef hadc1;
-uint32_t adc_result;
-UART_HandleTypeDef huart2;
+ uint32_t adc_result; 			/*VREFINT_DATA from ADC*/
+ uint32_t vref_charac;			/*VREF Characteristic from uC)*/
+ uint32_t vrefint_cal;			/*calibration value*/
+ uint32_t vrefint; 				/*calculated Vrefint*/
+ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
@@ -101,11 +105,16 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+	  vref_charac = *(uint8_t*)VREF_CALIB_VALUE;
+	  vrefint_cal = HAL_ADCEx_Calibration_GetValue(&hadc1);
+
 	  HAL_ADC_Start(&hadc1);
-	  //HAL_ADC_PollForConversion(&hadc1,1000);
+
 	  if (HAL_ADC_PollForConversion(&hadc1,1000) == HAL_OK)
 	  {
 		  adc_result = HAL_ADC_GetValue(&hadc1);
+		 //vrefint = (vref_charac*vrefint_cal*1000)/adc_result;
+		 vrefint = (*(uint8_t*)VREF_CALIB_VALUE)*HAL_ADCEx_Calibration_GetValue(&hadc1)*1000/adc_result;
 	  }
 
 	  HAL_ADC_Stop(&hadc1);
