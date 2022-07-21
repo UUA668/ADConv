@@ -43,7 +43,6 @@
  ADC_HandleTypeDef hadc1;
  uint32_t adc_result; 			/*VREFINT_DATA from ADC*/
  uint32_t vref_charac;			/*VREF Characteristic from uC)*/
- uint32_t vrefint_cal;			/*calibration value*/
  uint32_t vrefint; 				/*calculated Vrefint*/
  UART_HandleTypeDef huart2;
 
@@ -105,8 +104,8 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-	  vref_charac = *(uint8_t*)VREF_CALIB_VALUE;
-	  vrefint_cal = HAL_ADCEx_Calibration_GetValue(&hadc1);
+	  vref_charac = *(uint16_t*)VREF_CALIB_VALUE;
+
 
 	  HAL_ADC_Start(&hadc1);
 
@@ -114,7 +113,7 @@ int main(void)
 	  {
 		  adc_result = HAL_ADC_GetValue(&hadc1);
 		 //vrefint = (vref_charac*vrefint_cal*1000)/adc_result;
-		 vrefint = (*(uint8_t*)VREF_CALIB_VALUE)*HAL_ADCEx_Calibration_GetValue(&hadc1)*1000/adc_result;
+		 vrefint = (*(uint16_t*)VREF_CALIB_VALUE)*3000/adc_result;
 	  }
 
 	  HAL_ADC_Stop(&hadc1);
