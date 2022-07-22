@@ -39,14 +39,15 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-
  ADC_HandleTypeDef hadc1;
- uint32_t adc_result; 			/*VREFINT_DATA from ADC*/
- uint32_t vref_charac;			/*VREF Characteristic from uC)*/
- uint32_t vrefint; 				/*calculated Vrefint*/
- UART_HandleTypeDef huart2;
+
+UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
+uint16_t vrefint;
+uint16_t temp_value;
+uint16_t adc_result;
+ADC_ChannelConfTypeDef sChannel_conf = {0};
 
 /* USER CODE END PV */
 
@@ -103,20 +104,54 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-	  vref_charac = *(uint16_t*)VREF_CALIB_VALUE;
 
+
+	  sChannel_conf.Channel = ADC_CHANNEL_VREFINT;
+	  sChannel_conf.Rank = ADC_REGULAR_RANK_1;
+	  sChannel_conf.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+	    if (HAL_ADC_ConfigChannel(&hadc1, &sChannel_conf) != HAL_OK)
+	    {
+	      Error_Handler();
+	    }
 
 	  HAL_ADC_Start(&hadc1);
 
 	  if (HAL_ADC_PollForConversion(&hadc1,1000) == HAL_OK)
 	  {
 		  adc_result = HAL_ADC_GetValue(&hadc1);
-		 //vrefint = (vref_charac*vrefint_cal*1000)/adc_result;
-		 vrefint = (*(uint16_t*)VREF_CALIB_VALUE)*3000/adc_result;
+
+		 //vrefint = (*(uint16_t*)VREF_CALIB_VALUE)*3000/adc_result;
+		  vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result,LL_ADC_RESOLUTION_12B);
+
 	  }
 
 	  HAL_ADC_Stop(&hadc1);
+
+	  sChannel_conf.Channel = ADC_CHANNEL_TEMPSENSOR;
+	  	  sChannel_conf.Rank = ADC_REGULAR_RANK_1;
+	  	  sChannel_conf.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+	  	    if (HAL_ADC_ConfigChannel(&hadc1, &sChannel_conf) != HAL_OK)
+	  	    {
+	  	      Error_Handler();
+	  	    }
+
+	  	  HAL_ADC_Start(&hadc1);
+
+	  	  if (HAL_ADC_PollForConversion(&hadc1,1000) == HAL_OK)
+	  	  {
+	  		  adc_result = HAL_ADC_GetValue(&hadc1);
+
+	  		 //vrefint = (*(uint16_t*)VREF_CALIB_VALUE)*3000/adc_result;
+	  		 //vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result,LL_ADC_RESOLUTION_12B);
+	  		temp_value = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result,LL_ADC_RESOLUTION_12B);
+
+
+	  	  }
+
+	  	  HAL_ADC_Stop(&hadc1);
+
+    /* USER CODE END WHILE */
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
