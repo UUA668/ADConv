@@ -35,7 +35,9 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-#define VREF_CALIB_VALUE (0x1FFF75AA)
+//#define VREF_CALIB_VALUE (0x1FFF75AA)
+#define TS_CAL1 (0x1FFF75A8)
+#define TS_CAL2 (0x1FFF75CA)
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -44,9 +46,12 @@
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-uint16_t vrefint;
-uint16_t temp_value;
-uint16_t adc_result;
+uint32_t vrefint;
+int32_t temp_value;
+uint16_t cal1;
+uint16_t cal2;
+uint32_t adc_result_V;
+uint16_t adc_result_T;
 ADC_ChannelConfTypeDef sChannel_conf = {0};
 
 /* USER CODE END PV */
@@ -118,32 +123,31 @@ int main(void)
 
 	  if (HAL_ADC_PollForConversion(&hadc1,1000) == HAL_OK)
 	  {
-		  adc_result = HAL_ADC_GetValue(&hadc1);
+		  adc_result_V = HAL_ADC_GetValue(&hadc1);
 
-		 //vrefint = (*(uint16_t*)VREF_CALIB_VALUE)*3000/adc_result;
-		  vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result,LL_ADC_RESOLUTION_12B);
+
+		  vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result_V,LL_ADC_RESOLUTION_12B);
 
 	  }
 
 	  HAL_ADC_Stop(&hadc1);
 
 	  sChannel_conf.Channel = ADC_CHANNEL_TEMPSENSOR;
-	  	  sChannel_conf.Rank = ADC_REGULAR_RANK_1;
-	  	  sChannel_conf.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+	  sChannel_conf.Rank = ADC_REGULAR_RANK_1;
+	  sChannel_conf.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
 	  	    if (HAL_ADC_ConfigChannel(&hadc1, &sChannel_conf) != HAL_OK)
 	  	    {
 	  	      Error_Handler();
 	  	    }
 
 	  	  HAL_ADC_Start(&hadc1);
-
+	  	  cal1 = *((uint16_t*)TS_CAL1);
+	  	  cal2 = *((uint16_t*)TS_CAL2);
 	  	  if (HAL_ADC_PollForConversion(&hadc1,1000) == HAL_OK)
 	  	  {
-	  		  adc_result = HAL_ADC_GetValue(&hadc1);
+	  		  adc_result_T = HAL_ADC_GetValue(&hadc1);
 
-	  		 //vrefint = (*(uint16_t*)VREF_CALIB_VALUE)*3000/adc_result;
-	  		 //vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result,LL_ADC_RESOLUTION_12B);
-	  		temp_value = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result,LL_ADC_RESOLUTION_12B);
+	  		temp_value = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result_T,LL_ADC_RESOLUTION_12B);
 
 
 	  	  }
