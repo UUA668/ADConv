@@ -1,11 +1,12 @@
 #MicroXplorer Configuration settings - do not modify
 ADC1.Channel-1\#ChannelRegularConversion=ADC_CHANNEL_VREFINT
 ADC1.ChannelVREF=ADC_CHANNEL_VREFINT
-ADC1.IPParameters=Rank-1\#ChannelRegularConversion,Channel-1\#ChannelRegularConversion,SamplingTime-1\#ChannelRegularConversion,NbrOfConversionFlag,master,SelectedChannel,NbrOfConversion,ChannelVREF
+ADC1.IPParameters=Rank-1\#ChannelRegularConversion,Channel-1\#ChannelRegularConversion,SamplingTime-1\#ChannelRegularConversion,NbrOfConversionFlag,master,SelectedChannel,NbrOfConversion,SamplingTimeCommon2,ChannelVREF
 ADC1.NbrOfConversion=1
 ADC1.NbrOfConversionFlag=1
 ADC1.Rank-1\#ChannelRegularConversion=1
 ADC1.SamplingTime-1\#ChannelRegularConversion=ADC_SAMPLINGTIME_COMMON_1
+ADC1.SamplingTimeCommon2=ADC_SAMPLETIME_160CYCLES_5
 ADC1.SelectedChannel=ADC_CHANNEL_TEMPSENSOR|ADC_CHANNEL_VREFINT
 ADC1.master=1
 File.Version=6
