@@ -47,9 +47,10 @@ UART_HandleTypeDef huart2;
 /* USER CODE BEGIN PV */
 uint32_t vrefint;
 int32_t temp_value;
-
-uint32_t adc_result_V;
-uint16_t adc_result_T;
+uint16_t v_poti;
+uint32_t adc_result_V;	//Vref
+uint16_t adc_result_A0;	//A0 port
+uint16_t adc_result_T;	//internal temperatur
 ADC_ChannelConfTypeDef sChannel_conf = {0};
 
 /* USER CODE END PV */
@@ -108,6 +109,7 @@ int main(void)
   while (1)
   {
 
+/* VREF */
 
 	  sChannel_conf.Channel = ADC_CHANNEL_VREFINT;
 	  sChannel_conf.Rank = ADC_REGULAR_RANK_1;
@@ -130,6 +132,8 @@ int main(void)
 
 	  HAL_ADC_Stop(&hadc1);
 
+/* Internal temperature*/
+
 	  sChannel_conf.Channel = ADC_CHANNEL_TEMPSENSOR;
 	  sChannel_conf.Rank = ADC_REGULAR_RANK_1;
 	  sChannel_conf.SamplingTime = ADC_SAMPLINGTIME_COMMON_2;
@@ -145,11 +149,31 @@ int main(void)
 	  		  adc_result_T = HAL_ADC_GetValue(&hadc1);
 
 	  		temp_value = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result_T,LL_ADC_RESOLUTION_12B);
-
-
 	  	  }
 
 	  	  HAL_ADC_Stop(&hadc1);
+
+/* Analog Port - Potmeter*/
+
+	  	sChannel_conf.Channel = ADC_CHANNEL_0;
+	  	sChannel_conf.Rank = ADC_REGULAR_RANK_1;
+	  	sChannel_conf.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
+	  		    if (HAL_ADC_ConfigChannel(&hadc1, &sChannel_conf) != HAL_OK)
+	  		    {
+	  		      Error_Handler();
+	  		    }
+
+	  		  HAL_ADC_Start(&hadc1);
+
+	  		  if (HAL_ADC_PollForConversion(&hadc1,1000) == HAL_OK)
+	  		  {
+	  			  adc_result_A0 = HAL_ADC_GetValue(&hadc1);
+
+	  			v_poti = __LL_ADC_CALC_DATA_TO_VOLTAGE(vrefint,adc_result_A0,LL_ADC_RESOLUTION_12B);
+
+	  		  }
+
+	  		  HAL_ADC_Stop(&hadc1);
 
     /* USER CODE END WHILE */
 
@@ -243,7 +267,7 @@ static void MX_ADC1_Init(void)
 
   /** Configure Regular Channel
   */
-  sConfig.Channel = ADC_CHANNEL_VREFINT;
+  sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
   sConfig.Rank = ADC_REGULAR_RANK_1;
   sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
