@@ -40,7 +40,7 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-ADC_HandleTypeDef hadc1;
+ ADC_HandleTypeDef hadc1;
 
 UART_HandleTypeDef huart2;
 
@@ -111,14 +111,14 @@ int main(void)
   {
 
 	  HAL_ADC_Start_IT(&hadc1);
-
+	  HAL_Delay(500);
 	  vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result_V,LL_ADC_RESOLUTION_12B);
-	  HAL_Delay(500);
+
 	  temp_value = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result_T,LL_ADC_RESOLUTION_12B);
-	  HAL_Delay(500);
+
 	  v_poti = __LL_ADC_CALC_DATA_TO_VOLTAGE(vrefint,adc_result_A0,LL_ADC_RESOLUTION_12B);
 
-	  HAL_ADC_Stop_IT(&hadc1);
+	  HAL_Delay(500);
 
     /* USER CODE END WHILE */
 
@@ -225,6 +225,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_TEMPSENSOR;
   sConfig.Rank = ADC_REGULAR_RANK_2;
+  sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_2;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -234,6 +235,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_0;
   sConfig.Rank = ADC_REGULAR_RANK_3;
+  sConfig.SamplingTime = ADC_SAMPLINGTIME_COMMON_1;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -323,26 +325,38 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 	if (adc_rank == 1)
 		{
+
 		adc_result_V = HAL_ADC_GetValue(hadc);
+
 		}
 
 	if (adc_rank == 2)
 		{
+
 		adc_result_T = HAL_ADC_GetValue(hadc);
+
 		}
 
 	if (adc_rank == 3)
-		{
-		adc_result_A0 = HAL_ADC_GetValue(hadc);
+			{
 
-		}
-//else --> Reset
+			adc_result_A0 = HAL_ADC_GetValue(hadc);
+
+			}
+	if (adc_rank >= 4)
+	{
+		HAL_ADC_Stop_IT(&hadc1);
+		adc_rank = 3;
+	}
 
 	if (adc_rank == 3)
 		{
 		adc_rank = 1;
 		}
-	else adc_rank++;
+	else
+		{
+		adc_rank++;
+		}
 
 
 }
