@@ -111,14 +111,14 @@ int main(void)
   {
 
 	  HAL_ADC_Start_IT(&hadc1);
-	  HAL_Delay(500);
+	  HAL_Delay(100);
 	  vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result_V,LL_ADC_RESOLUTION_12B);
 
 	  temp_value = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result_T,LL_ADC_RESOLUTION_12B);
 
 	  v_poti = __LL_ADC_CALC_DATA_TO_VOLTAGE(vrefint,adc_result_A0,LL_ADC_RESOLUTION_12B);
 
-	  HAL_Delay(500);
+	  HAL_Delay(100);
 
     /* USER CODE END WHILE */
 
@@ -323,6 +323,28 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
+
+	switch(adc_rank)
+	{
+	case 1:
+			adc_result_V = HAL_ADC_GetValue(hadc);
+			break;
+	case 2:
+			adc_result_T = HAL_ADC_GetValue(hadc);
+			break;
+	case 3:
+			adc_result_A0 = HAL_ADC_GetValue(hadc);
+			adc_rank = 0;
+			break;
+	default:
+			HAL_ADC_Stop_IT(&hadc1);
+			adc_rank = 3;
+	}
+	adc_rank++;
+
+}
+	/*
+
 	if (adc_rank == 1)
 		{
 
@@ -359,7 +381,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 		}
 
 
-}
+}*/
 /* USER CODE END 4 */
 
 /**
