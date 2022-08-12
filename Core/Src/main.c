@@ -36,23 +36,35 @@
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 //#define VREF_CALIB_VALUE (0x1FFF75AA)
-
+#define ARRAY_SIZE 10
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
  ADC_HandleTypeDef hadc1;
-
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-uint32_t vrefint;
-int32_t temp_value;
+
+int32_t vrefint;
+int32_t temp;
 uint16_t v_poti;
-uint32_t adc_result_V;	//Vref
+uint16_t adc_result_V;
 uint16_t adc_result_A0;	//A0 port
 uint16_t adc_result_T;	//internal temperatur
 uint8_t adc_rank = 1;
 ADC_ChannelConfTypeDef sChannel_conf = {0};
+
+/* array definitions*/
+
+uint8_t array_counter_vref = 0;
+uint8_t array_counter_t = 0;
+uint8_t array_counter_A0 = 0;
+
+uint16_t vref_values [10];
+
+uint16_t temp_values [10];
+uint16_t A0_values [10];
+
 
 /* USER CODE END PV */
 
@@ -62,7 +74,7 @@ static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_ADC1_Init(void);
 /* USER CODE BEGIN PFP */
-
+uint16_t average_calc(uint16_t array_param [ARRAY_SIZE]);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -111,12 +123,25 @@ int main(void)
   {
 
 	  HAL_ADC_Start_IT(&hadc1);
-	  HAL_Delay(100);
+	  HAL_Delay(1000);
 	  vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result_V,LL_ADC_RESOLUTION_12B);
 
-	  temp_value = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result_T,LL_ADC_RESOLUTION_12B);
+	  temp_values [array_counter_t] = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result_T,LL_ADC_RESOLUTION_12B);
+	  ++array_counter_t;
+	  if (array_counter_t >= ARRAY_SIZE)
+	  	  {
+	  		  array_counter_t = 0;
+	  		  temp = average_calc(temp_values);
+	  	  }
 
-	  v_poti = __LL_ADC_CALC_DATA_TO_VOLTAGE(vrefint,adc_result_A0,LL_ADC_RESOLUTION_12B);
+	  A0_values [array_counter_A0] = __LL_ADC_CALC_DATA_TO_VOLTAGE(vrefint,adc_result_A0,LL_ADC_RESOLUTION_12B);
+	  ++array_counter_A0;
+	  if (array_counter_A0 >= ARRAY_SIZE)
+	  {
+		  array_counter_A0 = 0;
+		  v_poti = average_calc(A0_values);
+	  }
+
 
 	  HAL_Delay(100);
 
@@ -343,45 +368,19 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 	adc_rank++;
 
 }
-	/*
 
-	if (adc_rank == 1)
-		{
+uint16_t average_calc(uint16_t array_param [ARRAY_SIZE])
+{
+	uint16_t average = 0;
 
-		adc_result_V = HAL_ADC_GetValue(hadc);
-
-		}
-
-	if (adc_rank == 2)
-		{
-
-		adc_result_T = HAL_ADC_GetValue(hadc);
-
-		}
-
-	if (adc_rank == 3)
-			{
-
-			adc_result_A0 = HAL_ADC_GetValue(hadc);
-
-			}
-	if (adc_rank >= 4)
+	for (uint8_t i=0;i<ARRAY_SIZE;i++)
 	{
-		HAL_ADC_Stop_IT(&hadc1);
-		adc_rank = 3;
+	 average = average + array_param[i];
 	}
+	average = average/ARRAY_SIZE;
+return average;
+}
 
-	if (adc_rank == 3)
-		{
-		adc_rank = 1;
-		}
-	else
-		{
-		adc_rank++;
-		}
-
-
-}*/
 /* USER CODE END 4 */
 
 /**
