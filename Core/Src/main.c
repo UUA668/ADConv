@@ -45,13 +45,17 @@ UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
 
+/* Variable used for temporarily store interrupts priority task before entering critical section.
+ * At the end of critical section the original priority mask will be restored from this variable*/
+uint32_t irqPriorityMask;
+
 int32_t vrefint;
 int32_t temp;
 uint16_t v_poti;
 uint16_t adc_result_V;
 uint16_t adc_result_A0;	//A0 port
 uint16_t adc_result_T;	//internal temperatur
-uint8_t adc_rank = 1;
+uint32_t adc_rank = ADC_CHANNEL_VREFINT;
 ADC_ChannelConfTypeDef sChannel_conf = {0};
 
 /* array definitions*/
@@ -124,9 +128,19 @@ int main(void)
 
 	  HAL_ADC_Start_IT(&hadc1);
 	  HAL_Delay(1000);
+
+	  /* --------- Entering Critical section because of shared variable vrefintADCREsult  --------*/
+	  irqPriorityMask = __get_PRIMASK();	/* Store current irq priority mask */
+	  __disable_irq();						/* Disable interrupts -> alternative: __set_PRIMASK(1); */
+
 	  vrefint = __LL_ADC_CALC_VREFANALOG_VOLTAGE(adc_result_V,LL_ADC_RESOLUTION_12B);
 
 	  temp_values [array_counter_t] = __LL_ADC_CALC_TEMPERATURE(vrefint,adc_result_T,LL_ADC_RESOLUTION_12B);
+
+	  /* --------- Exit Critical section: restore previous priority mask */
+	  __set_PRIMASK(irqPriorityMask);			/* Restore priority mask to the state before entering critical section */
+
+
 	  ++array_counter_t;
 	  if (array_counter_t >= ARRAY_SIZE)
 	  	  {
@@ -134,7 +148,14 @@ int main(void)
 	  		  temp = average_calc(temp_values);
 	  	  }
 
+	  /* --------- Entering Critical section because of shared variable vrefintADCREsult  --------*/
+	  irqPriorityMask = __get_PRIMASK();	/* Store current irq priority mask */
+	  __disable_irq();						/* Disable interrupts -> alternative: __set_PRIMASK(1); */
+
 	  A0_values [array_counter_A0] = __LL_ADC_CALC_DATA_TO_VOLTAGE(vrefint,adc_result_A0,LL_ADC_RESOLUTION_12B);
+	  /* --------- Exit Critical section: restore previous priority mask */
+	  __set_PRIMASK(irqPriorityMask);			/* Restore priority mask to the state before entering critical section */
+
 	  ++array_counter_A0;
 	  if (array_counter_A0 >= ARRAY_SIZE)
 	  {
@@ -349,24 +370,30 @@ static void MX_GPIO_Init(void)
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 {
 
-	switch(adc_rank)
+	/* check which AD channel was converted */
+	switch (adc_rank)
 	{
-	case 1:
-			adc_result_V = HAL_ADC_GetValue(hadc);
-			break;
-	case 2:
-			adc_result_T = HAL_ADC_GetValue(hadc);
-			break;
-	case 3:
-			adc_result_A0 = HAL_ADC_GetValue(hadc);
-			adc_rank = 0;
-			break;
+	case ADC_CHANNEL_VREFINT:
+		adc_result_V = HAL_ADC_GetValue(hadc);
+		adc_rank = ADC_CHANNEL_TEMPSENSOR;		/* Set the actual channel to the next one in sequencer */
+		/* Starting AD convertion for the next configured channel */
+		HAL_ADC_Start_IT(&hadc1);
+		break;
+	case ADC_CHANNEL_TEMPSENSOR:
+		adc_result_T = HAL_ADC_GetValue(hadc);
+		adc_rank = ADC_CHANNEL_0;				/* Set the actual channel to the next one in sequencer */
+		/* Starting AD convertion for the next configured channel */
+		HAL_ADC_Start_IT(&hadc1);
+		break;
+	case ADC_CHANNEL_0:
+		adc_result_A0 = HAL_ADC_GetValue(hadc);
+		adc_rank = ADC_CHANNEL_VREFINT;			/* This should be last item in  the sequencer, set the actual channel to 1st element in the group */
+		break;
 	default:
-			HAL_ADC_Stop_IT(&hadc1);
-			adc_rank = 3;
+		HAL_ADC_Stop_IT(&hadc1);
+		adc_rank = ADC_CHANNEL_VREFINT;
+		break;
 	}
-	adc_rank++;
-
 }
 
 uint16_t average_calc(uint16_t array_param [ARRAY_SIZE])
